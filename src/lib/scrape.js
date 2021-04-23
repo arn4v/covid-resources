@@ -1,5 +1,6 @@
 const qs = require("querystringify")
 const { store } = require("./firebase-admin")
+const { getDateArr } = require("./utils")
 
 // https://www.bannerbear.com/blog/ways-to-speed-up-puppeteer-screenshots/
 const minimal_args = [
@@ -62,11 +63,7 @@ const getTweets = async (cities, resources, filterAccounts) => {
     headless: process.env.HEADLESS === "false" ? false : true,
   })
 
-  const [year, month, date] = new Date()
-    .toISOString()
-    .slice(0, 10)
-    .split("-")
-    .map((i) => parseInt(i))
+  const [year, month, date] = getDateArr()
   const since = `${year}-${month}-${date - 1}`
   let newTweets = 0
   let done = 0

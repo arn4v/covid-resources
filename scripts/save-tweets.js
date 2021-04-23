@@ -1,8 +1,17 @@
 require("dotenv").config()
-const { getTweets, getCities, getResources } = require("../src/lib/db")
+const {
+  getTweets,
+  getCities,
+  getResources,
+  getCityResources,
+} = require("../src/lib/db")
 const fs = require("fs")
 const path = require("path")
 ;(async () => {
+  fs.writeFileSync(
+    path.resolve(__dirname, "../cityResources.json"),
+    JSON.stringify(await getCityResources(), null, 4)
+  )
   fs.writeFileSync(
     path.resolve(__dirname, "../tweets.json"),
     JSON.stringify(await getTweets(), null, 4)
