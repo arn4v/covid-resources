@@ -98,6 +98,56 @@ export default function Home({ tweets, cities, resources, cityResources }) {
         <div className="w-full border-b lg:block border-gray-600" />
         <ResourceFilter filter={resourceFilter} data={resources} />
         <div className="w-full border-b lg:block border-gray-600" />
+        <div id="tweets" className="text-xl font-semibold">
+          Tweets
+        </div>
+        <div className="flex flex-col space-y-12 w-5/6">
+          {React.useMemo(
+            () =>
+              filtered.length > 0 ? (
+                filtered
+                  .sort((a, b) => {
+                    return -a.postedAt.localeCompare(b.postedAt)
+                  })
+                  .slice(0, limit + 1)
+                  .map(({ tweetId, votes: voteCount }) => {
+                    return (
+                      <div
+                        key={tweetId}
+                        className="w-full flex flex-col items-center justify-center space-y-4"
+                      >
+                        <Tweet id={tweetId} />
+                      </div>
+                    )
+                  })
+              ) : (
+                <div className="text-center">
+                  No tweets found for {locationFilter} & {resourceFilter}. This
+                  might be a bug, please DM on Twitter to let me know.
+                  <br />
+                  <a
+                    target="_blank"
+                    href="https://twitter.com/arn4v"
+                    className="text-blue-600"
+                  >
+                    @arn4v
+                  </a>
+                </div>
+              ),
+            [filtered, limit]
+          )}
+        </div>
+        {limit + 20 < filtered.length && (
+          <button
+            onClick={showMore}
+            className="bg-indigo-200 text-indigo-700 flex items-center justify-center px-4 py-2 rounded-md gap-2 shadow-md"
+            disabled={limit + 20 > filtered.length}
+          >
+            <HiChevronDoubleDown />
+            Show more
+          </button>
+        )}
+        <div className="w-full border-b lg:block border-gray-600" />
         <div className="text-lg font-semibold">Additional Resources</div>
         {showAdditional && (
           <dl className="border border-b-0 overflow-hidden border-gray-400 rounded-md">
@@ -153,56 +203,6 @@ export default function Home({ tweets, cities, resources, cityResources }) {
             </>
           )}
         </button>
-        <div className="w-full border-b lg:block border-gray-600" />
-        <div id="tweets" className="text-xl font-semibold">
-          Tweets
-        </div>
-        <div className="flex flex-col space-y-12 w-5/6">
-          {React.useMemo(
-            () =>
-              filtered.length > 0 ? (
-                filtered
-                  .sort((a, b) => {
-                    return -a.postedAt.localeCompare(b.postedAt)
-                  })
-                  .slice(0, limit + 1)
-                  .map(({ tweetId, votes: voteCount }) => {
-                    return (
-                      <div
-                        key={tweetId}
-                        className="w-full flex flex-col items-center justify-center space-y-4"
-                      >
-                        <Tweet id={tweetId} />
-                      </div>
-                    )
-                  })
-              ) : (
-                <div className="text-center">
-                  No tweets found for {locationFilter} & {resourceFilter}. This
-                  might be a bug, please DM on Twitter to let me know.
-                  <br />
-                  <a
-                    target="_blank"
-                    href="https://twitter.com/arn4v"
-                    className="text-blue-600"
-                  >
-                    @arn4v
-                  </a>
-                </div>
-              ),
-            [filtered, limit]
-          )}
-        </div>
-        {limit + 20 < filtered.length && (
-          <button
-            onClick={showMore}
-            className="bg-indigo-200 text-indigo-700 flex items-center justify-center px-4 py-2 rounded-md gap-2 shadow-md"
-            disabled={limit + 20 > filtered.length}
-          >
-            <HiChevronDoubleDown />
-            Show more
-          </button>
-        )}
       </div>
     </>
   )

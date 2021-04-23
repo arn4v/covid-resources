@@ -63,22 +63,24 @@ const getTweets = async (cities, resources, filterAccounts) => {
     headless: process.env.HEADLESS === "false" ? false : true,
   })
 
+  const ctx = await browser.newContext({
+    viewport: {
+      height: 1920,
+      width: 1080,
+    },
+  })
+
   const [year, month, date] = getDateArr()
   const since = `${year}-${month}-${date - 1}`
-  let newTweets = 0
   let done = 0
   const cityArr = Object.keys(cities).sort()
 
   for (const city of cityArr) {
     console.log(`Scraping data for ${city}`)
-    for (const [title, searchTerm] of Object.entries(resources)) {
-      const page = await browser.newPage({
-        viewport: {
-          width: 1920,
-          height: 1080,
-        },
-      })
+    let cityTweets = []
 
+    for (const [title, searchTerm] of Object.entries(resources)) {
+      const page = await ctx.newPage()
       const url =
         `https://twitter.com/search?` +
         qs.stringify({
@@ -100,46 +102,43 @@ const getTweets = async (cities, resources, filterAccounts) => {
         waitUntil: "networkidle",
       })
 
-      const tweets = await page.evaluate(async () => {
+      const tweets = await page.evaluate(async (resource) => {
         return await new Promise((resolve) => {
           let links = new Set()
-          const timeIncrement = 100
-          const timesToScroll = 1
-          for (let i = 0; i <= timesToScroll; i++) {
-            console.log(i, timesToScroll)
-            setTimeout(() => {
-              if (i === timesToScroll) {
-                resolve(Array.from(new Set(Array.from(links))))
-              }
-              scrollBy(0, 1000)
-              Array.from(document.querySelectorAll("div.r-1d09ksm > a"))
-                .filter((node) => node.href !== undefined)
-                .forEach((node) => {
-                  if (
-                    Array.from(links).filter((i) => i.tweetUrl === node.href)
-                      .length === 0
-                  ) {
-                    links.add({
-                      tweetUrl: node.href,
-                      time: Array.from(node.childNodes)[0].dateTime,
-                    })
-                  }
+          scrollBy(0, 1000)
+          Array.from(document.querySelectorAll("div.r-1d09ksm > a"))
+            .filter((node) => node.href !== undefined)
+            .forEach((node) => {
+              if (
+                Array.from(links).filter((i) => i.tweetUrl === node.href)
+                  .length === 0
+              ) {
+                links.add({
+                  resource,
+                  tweetUrl: node.href,
+                  time: Array.from(node.childNodes)[0].dateTime,
                 })
-            }, timeIncrement * i)
-          }
+              }
+            })
+          resolve(Array.from(links))
         })
-      })
+      }, title)
 
-      const setObject = {}
-      for (const { tweetUrl, time } of tweets) {
+      cityTweets = cityTweets.concat(tweets)
+      console.log("Tweets added: ", tweets.length)
+      await page.close()
+    }
+
+    await store.doc(`tweets/${year}-${month}-${date}`).set(
+      cityTweets.reduce((acc, { tweetUrl, resource, time }) => {
         const metadata = getDataFromTweetUrl(tweetUrl)
-        setObject[metadata.tweetId] = {
+        acc[metadata.tweetId] = {
           ...metadata,
           location: {
             [city]: true,
           },
           for: {
-            [title]: true,
+            [resource]: true,
           },
           show: true,
           status: "available",
@@ -147,17 +146,13 @@ const getTweets = async (cities, resources, filterAccounts) => {
           postedAt: new Date(time),
           createdAt: new Date(),
         }
-        newTweets += 1
-      }
-
-      await store.doc(`tweets/${year}-${month}-${date}`).set(setObject, {
+        return acc
+      }, {}),
+      {
         merge: true,
-      })
+      }
+    )
 
-      console.log("Tweets added: ", newTweets)
-      newTweets = 0
-      await page.close()
-    }
     done += 1
     console.log("Cities to go: ", cityArr.length - done)
   }
