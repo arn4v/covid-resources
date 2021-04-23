@@ -13,4 +13,4 @@ const getDateArr = () => {
 }
 
 module.exports.sleep = sleep
-module.exports.getDateArr = sleep
+module.exports.getDateArr = getDateArr
