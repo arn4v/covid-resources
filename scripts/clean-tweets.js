@@ -1,7 +1,7 @@
 require("dotenv").config()
 const { getDateArr } = require("../src/lib/utils")
-
 const { store } = require("../src/lib/firebase-admin")
+
 ;(async () => {
   const date = getDateArr().join("-")
   const ref = store.doc("tweets/" + date)

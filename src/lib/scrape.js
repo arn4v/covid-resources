@@ -98,61 +98,65 @@ const getTweets = async (cities, resources, filterAccounts) => {
 
       console.log(`Scraping data for ${city} - ${title} - ${url}`)
 
-      await page.goto(url, {
-        waitUntil: "networkidle",
-      })
-
-      const tweets = await page.evaluate(async (resource) => {
-        return await new Promise((resolve) => {
-          let links = new Set()
-          scrollBy(0, 1000)
-          Array.from(document.querySelectorAll("div.r-1d09ksm > a"))
-            .filter((node) => node.href !== undefined)
-            .forEach((node) => {
-              if (
-                Array.from(links).filter((i) => i.tweetUrl === node.href)
-                  .length === 0
-              ) {
-                links.add({
-                  resource,
-                  tweetUrl: node.href,
-                  time: Array.from(node.childNodes)[0].dateTime,
-                })
-              }
-            })
-          resolve(Array.from(links))
+      try {
+        await page.goto(url, {
+          waitUntil: "networkidle",
         })
-      }, title)
 
-      cityTweets = cityTweets.concat(tweets)
-      console.log("Tweets added: ", tweets.length)
-      await page.close()
-    }
+        const tweets = await page.evaluate(async (resource) => {
+          return await new Promise((resolve) => {
+            let links = new Set()
+            scrollBy(0, 1000)
+            Array.from(document.querySelectorAll("div.r-1d09ksm > a"))
+              .filter((node) => node.href !== undefined)
+              .forEach((node) => {
+                if (
+                  Array.from(links).filter((i) => i.tweetUrl === node.href)
+                    .length === 0
+                ) {
+                  links.add({
+                    resource,
+                    tweetUrl: node.href,
+                    time: Array.from(node.childNodes)[0].dateTime,
+                  })
+                }
+              })
+            resolve(Array.from(links))
+          })
+        }, title)
 
-    await store.doc(`tweets/${year}-${month}-${date}`).set(
-      cityTweets.reduce((acc, { tweetUrl, resource, time }) => {
-        const metadata = getDataFromTweetUrl(tweetUrl)
-        acc[metadata.tweetId] = {
-          ...metadata,
-          location: {
-            [city]: true,
-          },
-          for: {
-            [resource]: true,
-          },
-          show: true,
-          status: "available",
-          votes: 0,
-          postedAt: new Date(time),
-          createdAt: new Date(),
-        }
-        return acc
-      }, {}),
-      {
-        merge: true,
+        cityTweets = cityTweets.concat(tweets)
+        console.log("Tweets added: ", tweets.length)
+        await page.close()
+
+        await store.doc(`tweets/${year}-${month}-${date}`).set(
+          cityTweets.reduce((acc, { tweetUrl, resource, time }) => {
+            const metadata = getDataFromTweetUrl(tweetUrl)
+            acc[metadata.tweetId] = {
+              ...metadata,
+              location: {
+                [city]: true,
+              },
+              for: {
+                [resource]: true,
+              },
+              show: true,
+              status: "available",
+              votes: 0,
+              postedAt: new Date(time),
+              createdAt: new Date(),
+            }
+            return acc
+          }, {}),
+          {
+            merge: true,
+          }
+        )
+      } catch (err) {
+        await page.close()
+        console.log(err)
       }
-    )
-
+    }
     done += 1
     console.log("Cities to go: ", cityArr.length - done)
   }
