@@ -45,7 +45,13 @@ export default function Home({ tweets, cities, resources, cityResources }) {
     let _tweets = tweets
     if (router.query.city) {
       const city = /** @type {string} */ (router.query.city)
-      _tweets = _tweets.filter((i) => Object.keys(i.location).includes(city))
+      _tweets = _tweets.filter(
+        (i) =>
+          Object.keys(i.location).includes(city) ||
+          Object.keys(i.location)
+            .map((i) => i.toLowerCase())
+            .includes(city.toLowerCase())
+      )
       setLocationFilter(/** @type {string} */ (router.query.city))
     } else {
       setLocationFilter("all")
@@ -55,7 +61,10 @@ export default function Home({ tweets, cities, resources, cityResources }) {
       /** @type {string} */
       const resource = router.query.resource
       _tweets = _tweets.filter((tweet) => {
-        return tweet.for[resource] === true
+        return (
+          tweet.for[resource] === true ||
+          tweet.for[resource.toLowerCase()] === true
+        )
       })
       setResourceFilter(/** @type {string} */ (router.query.resource))
     } else {

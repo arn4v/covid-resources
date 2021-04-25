@@ -63,13 +63,6 @@ const getTweets = async (cities, resources, filterAccounts) => {
     headless: process.env.HEADLESS === "false" ? false : true,
   })
 
-  const ctx = await browser.newContext({
-    viewport: {
-      height: 1920,
-      width: 1080,
-    },
-  })
-
   const [year, month, date] = getDateArr()
   const since = `${year}-${month}-${date - 1}`
   let done = 0
@@ -80,7 +73,12 @@ const getTweets = async (cities, resources, filterAccounts) => {
     let cityTweets = []
 
     for (const [title, searchTerm] of Object.entries(resources)) {
-      const page = await ctx.newPage()
+      const page = await browser.newPage({
+        viewport: {
+          height: 1920,
+          width: 1080,
+        },
+      })
       const url =
         `https://twitter.com/search?` +
         qs.stringify({
